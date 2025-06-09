@@ -12,7 +12,6 @@ public class StreamPropagationApplication {
 
         OrderService orderService = SpringApplication.run(StreamPropagationApplication.class, args).getBean(OrderServiceImpl.class);
         orderService.processAllOrders();
-        System.out.println("Hello world!");
     }
 
 }

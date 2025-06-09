@@ -4,11 +4,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.test.micro.streampropagation.entity.Order;
+import ru.test.micro.streampropagation.entity.OrderItem;
 import ru.test.micro.streampropagation.repository.OrderItemRepository;
 import ru.test.micro.streampropagation.repository.OrderRepository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 @Service
 @Slf4j
@@ -26,14 +28,13 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public void processAllOrders() {
         //может быть очень большая выборка (1M/2M+)
-        List<Order> orders = orderRepository.findAllWithJoinFetch();
-
-        for (Order order : orders) {
-            int totalQuantity = 0;
-            for (var item : order.getItems()) {
-                totalQuantity += item.getQuantity();
-            }
-            auditTotalQuantity(order.getId(), totalQuantity);
+        try (Stream<Order> orders = orderRepository.findAllWithJoinFetchPropagation()) {
+            orders.forEach(order -> {
+                Long orderId = order.getId();
+                for (OrderItem item : order.getItems()) {
+                    auditTotalQuantity(orderId, item.getQuantity());
+                }
+            });
         }
     }
 
